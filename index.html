@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repair and Maintenance Job</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: #e2e8f0; padding: 14px; min-height: 100vh; padding-bottom: 80px; }
+  header { text-align: center; padding: 16px 10px; background: linear-gradient(135deg, #1e3a8a, #0ea5e9); border-radius: 12px; margin-bottom: 14px; position: relative; }
+  header h1 { font-size: 1.3rem; }
+  header p { font-size: 0.75rem; opacity: 0.85; margin-top: 4px; }
+  .online-counter { position: absolute; top: 8px; right: 12px; background: rgba(0,0,0,0.35); padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; cursor: default; }
+  .online-counter.clickable { cursor: pointer; }
+  .online-counter.clickable:hover { background: rgba(0,0,0,0.55); }
+
+  .status-bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 10px 14px; background: #1e293b; border-radius: 10px; font-size: 0.78rem; }
+  .status-bar .role { padding: 4px 10px; border-radius: 20px; font-weight: bold; font-size: 0.7rem; margin-left: 6px; }
+  .role-admin { background: #22c55e; color: white; }
+  .role-viewer { background: #64748b; color: white; }
+  .online-dot { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; margin-right: 4px; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .btn { padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.78rem; transition: 0.2s; white-space: nowrap; }
+  .btn-primary { background: #0ea5e9; color: white; }
+  .btn-danger { background: #ef4444; color: white; }
+  .btn-success { background: #22c55e; color: white; }
+  .btn-warning { background: #f59e0b; color: white; }
+  .btn-archive { background: #8b5cf6; color: white; }
+  .btn-logout { background: #475569; color: white; }
+  .btn-edit { background: #6366f1; color: white; }
+  .btn:hover { opacity: 0.85; }
+
+  .search-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+  .search-box { flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-size: 0.85rem; }
+  .search-btn { padding: 10px 16px; border: none; border-radius: 8px; background: #0ea5e9; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-bottom: 14px; }
+  .stat-card { background: #1e293b; padding: 10px; border-radius: 10px; text-align: center; border-left: 4px solid #0ea5e9; }
+  .stat-card .num { font-size: 1.3rem; font-weight: bold; color: #0ea5e9; }
+  .stat-card .lbl { font-size: 0.68rem; opacity: 0.75; margin-top: 2px; }
+
+  .section { background: #1e293b; border-radius: 12px; margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+  .section-header { padding: 14px 16px; background: #334155; font-weight: bold; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+  .section-header .arrow { transition: transform 0.3s; font-size: 0.9rem; }
+  .section-header.collapsed .arrow { transform: rotate(-90deg); }
+  .section-header .progress-info { font-size: 0.7rem; font-weight: normal; opacity: 0.85; margin-left: 8px; }
+
+  .group { background: #0f172a; margin: 6px 10px; border-radius: 8px; overflow: hidden; border-left: 3px solid #0ea5e9; }
+  .group.progress-high { border-left-color: #22c55e; }
+  .group.progress-mid { border-left-color: #f59e0b; }
+  .group.progress-low { border-left-color: #ef4444; }
+  .group.progress-empty { border-left-color: #64748b; }
+  .group-header { padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; font-size: 0.85rem; gap: 6px; }
+  .group-header:hover { background: #1e293b; }
+  .group-title { font-weight: 600; flex: 1; }
+  .group-title .count { font-weight: normal; opacity: 0.7; font-size: 0.75rem; }
+  .group-progress { font-size: 0.72rem; font-weight: bold; padding: 3px 8px; border-radius: 12px; }
+  .prog-done { background: #22c55e; color: white; }
+  .prog-progress { background: #f59e0b; color: white; }
+  .prog-empty { background: #64748b; color: white; }
+  .group-header .arrow { transition: transform 0.3s; font-size: 0.8rem; margin-left: 8px; }
+  .group-header.collapsed .arrow { transform: rotate(-90deg); }
+  .group-edit-btn { background: #6366f1; color: white; border: none; border-radius: 6px; padding: 4px 8px; font-size: 0.68rem; cursor: pointer; }
+  .group-add-btn { background: #0ea5e9; color: white; border: none; border-radius: 6px; padding: 4px 10px; font-size: 0.68rem; cursor: pointer; }
+
+  .task { padding: 10px 12px; border-bottom: 1px solid #334155; background: #1e293b; }
+  .task:last-child { border-bottom: none; }
+  .task-row1 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .task-name { flex: 1; min-width: 120px; font-size: 0.85rem; font-weight: 600; }
+  .task-status { padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; min-width: 65px; text-align: center; }
+  .task-status.clickable { cursor: pointer; user-select: none; }
+  .status-pending { background: #64748b; color: white; }
+  .status-progress { background: #f59e0b; color: white; }
+  .status-done { background: #22c55e; color: white; }
+  .status-skip { background: #ef4444; color: white; }
+
+  .task-row2 { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .task-row2 input, .task-row3 input[type="text"] { flex: 1; min-width: 90px; padding: 6px 8px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.75rem; }
+  .task-row2 input[type="time"] { max-width: 100px; }
+  .task-row2 input:disabled, .task-row3 input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .task-row3 { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .task-row3 input[type="text"] { flex: 1; min-width: 120px; }
+
+  .keterangan-box { background: #0f172a; padding: 8px 10px; border-radius: 6px; font-size: 0.75rem; margin-bottom: 6px; border-left: 3px solid #6366f1; white-space: pre-wrap; word-break: break-word; }
+  .keterangan-label { font-size: 0.65rem; opacity: 0.6; margin-bottom: 2px; font-weight: bold; }
+
+  .upload-btn { padding: 5px 10px; border-radius: 6px; background: #475569; color: white; font-size: 0.7rem; cursor: pointer; border: none; }
+  .edit-task-btn { padding: 5px 10px; border-radius: 6px; background: #6366f1; color: white; font-size: 0.7rem; cursor: pointer; border: none; }
+  .archive-btn { padding: 5px 8px; border-radius: 6px; background: #8b5cf6; color: white; font-size: 0.7rem; cursor: pointer; border: none; }
+
+  .photo-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .photo-item { position: relative; width: 65px; height: 65px; border-radius: 6px; overflow: hidden; border: 2px solid #334155; cursor: pointer; }
+  .photo-item img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-item .del-photo { position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.9); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; cursor: pointer; line-height: 1; }
+
+  .add-task { padding: 8px 12px; display: flex; gap: 6px; background: #0f172a; }
+  .add-task input { flex: 1; padding: 7px 10px; border-radius: 6px; border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-size: 0.78rem; }
+  .add-task button { padding: 9px 16px; border: none; border-radius: 6px; background: #0ea5e9; color: white; font-weight: bold; cursor: pointer; font-size: 0.85rem; min-width: 90px; }
+
+  .footer { text-align: center; font-size: 0.7rem; opacity: 0.5; margin-top: 20px; padding: 10px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(120px); background: #22c55e; color: white; padding: 10px 20px; border-radius: 8px; font-size: 0.82rem; transition: transform 0.3s; z-index: 999; max-width: 90%; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #ef4444; }
+  .toast.warn { background: #f59e0b; }
+
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+  .modal.show { display: flex; }
+  .modal img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
+  .modal .close-modal { position: absolute; top: 20px; right: 20px; background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+
+  .panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1001; padding: 14px; overflow-y: auto; }
+  .panel.show { display: block; }
+  .panel-content { max-width: 900px; margin: 0 auto; background: #1e293b; border-radius: 12px; padding: 16px; }
+  .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #334155; flex-wrap: wrap; gap: 8px; }
+  .panel-item { background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #8b5cf6; }
+  .panel-item .title { font-weight: bold; font-size: 0.85rem; margin-bottom: 4px; }
+  .panel-item .meta { font-size: 0.72rem; opacity: 0.75; margin-bottom: 4px; }
+  .panel-item .photos { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .panel-item .photos img { width: 55px; height: 55px; object-fit: cover; border-radius: 6px; cursor: pointer; }
+  .panel-item .actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .panel-item .actions button { padding: 6px 12px; border-radius: 6px; border: none; font-size: 0.72rem; cursor: pointer; font-weight: 600; color: white; }
+  .btn-approve { background: #22c55e; }
+  .btn-reject { background: #ef4444; }
+  .empty-panel { text-align: center; padding: 40px 20px; opacity: 0.5; font-style: italic; font-size: 0.85rem; }
+
+  .badge-count { background: #ef4444; color: white; font-size: 0.62rem; padding: 2px 6px; border-radius: 10px; margin-left: 4px; font-weight: bold; }
+
+  .login-screen { display: flex; align-items: center; justify-content: center; min-height: 80vh; padding: 16px; }
+  .login-box { background: #1e293b; padding: 22px; border-radius: 12px; max-width: 400px; width: 100%; }
+  .login-box h2 { margin-bottom: 14px; text-align: center; font-size: 1.15rem; }
+  .login-box input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; margin-bottom: 10px; font-size: 0.9rem; }
+  .login-box button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #0ea5e9; color: white; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+  .login-hint { font-size: 0.7rem; opacity: 0.65; text-align: center; margin-top: 10px; line-height: 1.5; }
+  .login-hint strong { color: #0ea5e9; }
+
+  .form-field { margin-bottom: 10px; }
+  .form-field label { display: block; font-size: 0.75rem; margin-bottom: 4px; opacity: 0.85; font-weight: 600; }
+  .form-field input, .form-field textarea, .form-field select { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #e2e8f0; font-size: 0.82rem; font-family: inherit; }
+  .form-field textarea { min-height: 100px; resize: vertical; }
+
+  .online-list-item { padding: 8px 12px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+  .online-list-item:last-child { border-bottom: none; }
+  .online-list-item .badge-role { font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.05rem; }
+    .task-name { font-size: 0.82rem; }
+    .photo-item { width: 55px; height: 55px; }
+    .btn { font-size: 0.72rem; padding: 7px 10px; }
+    .online-counter { font-size: 0.65rem; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="online-counter" id="onlineCounter" title="Pengunjung online">🟢 0 online</div>
+  <h1>🔧 Repair and Maintenance Job</h1>
+  <p>Versi Online — Data Tersinkron Semua Perangkat</p>
+</header>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <h2>🔐 Masuk</h2>
+    <input type="text" id="loginName" placeholder="Nama Anda" autocomplete="off">
+    <input type="password" id="loginPass" placeholder="Password (kosongkan jika viewer)" autocomplete="off">
+    <button onclick="doLogin()">Masuk</button>
+    <div class="login-hint">
+      <strong>Admin:</strong> isi nama + password admin<br>
+      <strong>Viewer (teman):</strong> cukup isi nama, password kosong
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+  <div class="status-bar">
+    <div>
+      <span class="online-dot"></span>
+      <span>Tersambung</span>
+    </div>
+    <div>
+      <span id="userNameDisplay"></span>
+      <span id="roleDisplay" class="role role-viewer">Viewer</span>
+    </div>
+    <button class="btn btn-logout" onclick="logout()" style="font-size:0.7rem; padding:5px 10px;">Keluar</button>
+  </div>
+
+  <div class="toolbar">
+    <input type="date" id="datePicker" style="padding:8px 12px; border-radius:8px; border:1px solid #334155; background:#1e293b; color:#e2e8f0; font-size:0.8rem;">
+    <button class="btn btn-warning" id="btnReset" onclick="resetHarian()" style="display:none;">🔄 Reset</button>
+    <button class="btn btn-primary" id="btnPending" onclick="openPending()" style="display:none; position:relative;">
+      📥 Permintaan <span class="badge-count" id="pendingBadge" style="display:none">0</span>
+    </button>
+    <button class="btn btn-archive" onclick="openArchive()">📦 Arsip</button>
+    <button class="btn btn-success" onclick="exportData()">⬇ Export</button>
+    <button class="btn btn-primary" id="btnImport" onclick="importData()" style="display:none;">⬆ Import</button>
+  </div>
+
+  <div class="search-wrap">
+    <input type="text" id="searchBox" class="search-box" placeholder="🔍 Cari pekerjaan / kamar / alat...">
+    <button class="search-btn" onclick="doSearch()">🔍 Cari</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="num" id="statTotal">0</div><div class="lbl">Total</div></div>
+    <div class="stat-card"><div class="num" id="statDone">0</div><div class="lbl">Selesai</div></div>
+    <div class="stat-card"><div class="num" id="statProgress">0</div><div class="lbl">Proses</div></div>
+    <div class="stat-card"><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
+    <div class="stat-card"><div class="num" id="statSkip">0</div><div class="lbl">Skip</div></div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="footer">
+    <span>☁️ Data tersinkron ke cloud</span>
+  </div>
+</div>
+
+<div class="toast" id="toast">Tersimpan</div>
+
+<!-- MODAL FOTO -->
+<div class="modal" id="imgModal" onclick="closeModal()">
+  <button class="close-modal">✕ Tutup</button>
+  <img id="modalImg" src="">
+</div>
+
+<!-- PANEL ARSIP -->
+<div class="panel" id="archivePanel">
+  <div class="panel-content">
+    <div class="panel-header">
+      <h2>📦 Arsip Pekerjaan</h2>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-danger" id="btnClearArchive" onclick="clearArchive()" style="display:none;">🗑 Kosongkan</button>
+        <button class="btn btn-primary" onclick="closeArchive()">✕ Tutup</button>
+      </div>
+    </div>
+    <div id="archiveList"></div>
+  </div>
+</div>
+
+<!-- PANEL PENDING -->
+<div class="panel" id="pendingPanel">
+  <div class="panel-content">
+    <div class="panel-header">
+      <h2>📥 Permintaan Perubahan</h2>
+      <button class="btn btn-primary" onclick="closePending()">✕ Tutup</button>
+    </div>
+    <div id="pendingList"></div>
+  </div>
+</div>
+
+<!-- PANEL APPROVE -->
+<div class="panel" id="approvePanel">
+  <div class="panel-content">
+    <div class="panel-header">
+      <h2 id="approveTitle">Detail Permintaan</h2>
+      <button class="btn btn-primary" onclick="closeApprove()">✕ Tutup</button>
+    </div>
+    <div id="approveDetail"></div>
+  </div>
+</div>
+
+<!-- PANEL EDIT TASK -->
+<div class="panel" id="editTaskPanel">
+  <div class="panel-content">
+    <div class="panel-header">
+      <h2 id="editTaskTitle">Edit Pekerjaan</h2>
+      <button class="btn btn-primary" onclick="closeEditTask()">✕ Tutup</button>
+    </div>
+    <div id="editTaskContent"></div>
+  </div>
+</div>
+
+<!-- PANEL EDIT GROUP -->
+<div class="panel" id="editGroupPanel">
+  <div class="panel-content">
+    <div class="panel-header">
+      <h2 id="editGroupTitle">Edit Alat</h2>
+      <button class="btn btn-primary" onclick="closeEditGroup()">✕ Tutup</button>
+    </div>
+    <div id="editGroupContent"></div>
+  </div>
+</div>
+
+<!-- PANEL ONLINE USERS -->
+<div class="panel" id="onlinePanel">
+  <div class="panel-content">
+    <div class="panel-header">
+      <h2>🟢 Pengguna Online</h2>
+      <button class="btn btn-primary" onclick="closeOnline()">✕ Tutup</button>
+    </div>
+    <div id="onlineList"></div>
+  </div>
+</div>
+
+<input type="file" id="hiddenFileInput" accept="image/*" style="display:none">
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove, push, update, onDisconnect, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCDifVp1VSwCP8IvqSoQ1Ar1l_tPv5hKQM",
+  authDomain: "repair-and-maintenance-job.firebaseapp.com",
+  databaseURL: "https://repair-and-maintenance-job-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "repair-and-maintenance-job",
+  storageBucket: "repair-and-maintenance-job.firebasestorage.app",
+  messagingSenderId: "25865059073",
+  appId: "1:25865059073:web:800e649961fd0fc608f900"
+};
+
+const ADMIN_PASSWORD = "team123";
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+let data = [];
+let archive = [];
+let pending = [];
+let onlineUsers = [];
+let collapsed = {};
+let currentPhotoTask = null;
+let currentUser = { name: "", isAdmin: false };
+let mySessionId = null;
+let unsubData = null, unsubArchive = null, unsubPending = null, unsubOnline = null;
+
+const STATUS_LABEL = { pending: "Pending", progress: "Proses", done: "Selesai", skip: "Skip" };
+const STATUS_ORDER = ["pending", "progress", "done", "skip"];
+
+// ============== GENERATE DATA ==============
+function makeTask(id, name) {
+  return { id, name, status: "pending", note: "", teknisi: "", start: "", end: "", photos: [], keterangan: "" };
+}
+function makeBarak(n, jml) {
+  const tasks = [];
+  for (let i = 1; i <= jml; i++) {
+    const letter = String.fromCharCode(96 + i);
+    tasks.push(makeTask(`A${n}_K${i}`, `${letter}. Kamar ${i}`));
+  }
+  return { id: `A_BARAK${n}`, title: `Barak ${n} (${jml} kamar)`, tasks };
+}
+function makeACGroup(groupId, nama, jml) {
+  const tasks = [];
+  for (let i = 1; i <= jml; i++) {
+    const letter = String.fromCharCode(96 + i);
+    tasks.push(makeTask(`${groupId}_AC${i}`, `${letter}. AC ${i}`));
+  }
+  return { id: groupId, title: `${nama} (${jml} AC)`, tasks };
+}
+function makeRepairGroup(groupId, nama) {
+  return { id: groupId, title: nama, tasks: [] };
+}
+
+const DEFAULT_DATA = [
+  { id: "A", title: "A. Cleaning AC — Barak", groups: [
+    makeBarak(1,12), makeBarak(2,12), makeBarak(3,12), makeBarak(4,12),
+    makeBarak(5,13), makeBarak(6,6), makeBarak(7,4), makeBarak(8,32)
+  ]},
+  { id: "B", title: "B. Cleaning AC — Fasilitas", groups: [
+    makeACGroup("B_MASJID","Masjid",5),
+    makeACGroup("B_TC","Training Center",4),
+    makeACGroup("B_SPORT","Sport Hall",5),
+    makeACGroup("B_SOUTH","South Office",10),
+    makeACGroup("B_GENSET","Genset",3),
+    makeACGroup("B_GEREJA","Gereja",5)
+  ]},
+  { id: "C", title: "C. Repair and Maintenance", groups: [
+    makeRepairGroup("C_GENSET", "Genset"),
+    makeRepairGroup("C_FIRETRUCK", "Fire Truck"),
+    makeRepairGroup("C_POMPA", "Mesin Pompa"),
+    makeRepairGroup("C_LAUNDRY", "Mesin Laundry"),
+    makeRepairGroup("C_MESSHALL", "Mesin Messhall"),
+    makeRepairGroup("C_LAMPU", "Lampu")
+  ]}
+];
+
+// ============== LOGIN ==============
+window.doLogin = function() {
+  const name = document.getElementById("loginName").value.trim();
+  const pass = document.getElementById("loginPass").value;
+  if (!name) return alert("Masukkan nama Anda!");
+  if (pass === ADMIN_PASSWORD) currentUser = { name, isAdmin: true };
+  else if (pass === "") currentUser = { name, isAdmin: false };
+  else return alert("Password salah!");
+  localStorage.setItem("rmj_user", JSON.stringify(currentUser));
+  enterApp();
+};
+
+window.logout = function() {
+  if (!confirm("Keluar?")) return;
+  if (mySessionId) {
+    const userRef = ref(db, "rmj2/online/" + mySessionId);
+    remove(userRef);
+    mySessionId = null;
+  }
+  localStorage.removeItem("rmj_user");
+  currentUser = { name: "", isAdmin: false };
+  document.getElementById("loginScreen").style.display = "flex";
+  document.getElementById("mainApp").style.display = "none";
+  if (unsubData) unsubData();
+  if (unsubArchive) unsubArchive();
+  if (unsubPending) unsubPending();
+  if (unsubOnline) unsubOnline();
+};
+
+function enterApp() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("mainApp").style.display = "block";
+  document.getElementById("userNameDisplay").textContent = "👤 " + currentUser.name;
+  const roleEl = document.getElementById("roleDisplay");
+  roleEl.textContent = currentUser.isAdmin ? "ADMIN" : "VIEWER";
+  roleEl.className = "role " + (currentUser.isAdmin ? "role-admin" : "role-viewer");
+
+  if (currentUser.isAdmin) {
+    document.getElementById("btnReset").style.display = "inline-block";
+    document.getElementById("btnPending").style.display = "inline-block";
+    document.getElementById("btnClearArchive").style.display = "inline-block";
+    document.getElementById("btnImport").style.display = "inline-block";
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("datePicker").value = today;
+  document.getElementById("hiddenFileInput").addEventListener("change", handleFileSelect);
+
+  // ONLINE TRACKING
+  mySessionId = "u_" + Date.now() + "_" + Math.random().toString(36).slice(2,8);
+  const myRef = ref(db, "rmj2/online/" + mySessionId);
+  set(myRef, {
+    name: currentUser.name,
+    role: currentUser.isAdmin ? "admin" : "viewer",
+    joinedAt: new Date().toISOString(),
+    lastSeen: new Date().toISOString()
+  });
+  onDisconnect(myRef).remove();
+
+  // HEARTBEAT tiap 20 detik
+  setInterval(() => {
+    if (mySessionId) {
+      update(ref(db, "rmj2/online/" + mySessionId), {
+        lastSeen: new Date().toISOString()
+      });
+    }
+  }, 20000);
+
+  unsubData = onValue(ref(db, "rmj2/data"), (s) => {
+    const v = s.val();
+    if (v) data = v;
+    else { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); set(ref(db, "rmj2/data"), data); }
+    render();
+  });
+  unsubArchive = onValue(ref(db, "rmj2/archive"), (s) => {
+    archive = s.val() || [];
+    renderArchive();
+    updateStats();
+  });
+  unsubPending = onValue(ref(db, "rmj2/pending"), (s) => {
+    pending = s.val() || [];
+    updatePendingBadge();
+    renderPending();
+  });
+  unsubOnline = onValue(ref(db, "rmj2/online"), (s) => {
+    const v = s.val() || {};
+    const now = Date.now();
+    onlineUsers = Object.keys(v).map(k => v[k]).filter(u => {
+      const last = new Date(u.lastSeen || 0).getTime();
+      return (now - last) < 90000;
+    });
+    updateOnlineCounter();
+    renderOnlineList();
+  });
+}
+
+// ============== ONLINE COUNTER ==============
+function updateOnlineCounter() {
+  const el = document.getElementById("onlineCounter");
+  if (!el) return;
+  el.textContent = "🟢 " + onlineUsers.length + " online";
+  if (currentUser.isAdmin) {
+    el.classList.add("clickable");
+    el.onclick = openOnline;
+    el.title = "Klik untuk lihat siapa saja online";
+  } else {
+    el.classList.remove("clickable");
+    el.onclick = null;
+    el.title = "Pengunjung online";
+  }
+}
+
+window.openOnline = function() {
+  if (!currentUser.isAdmin) return;
+  document.getElementById("onlinePanel").classList.add("show");
+  renderOnlineList();
+};
+window.closeOnline = function() {
+  document.getElementById("onlinePanel").classList.remove("show");
+};
+
+function renderOnlineList() {
+  const list = document.getElementById("onlineList");
+  if (!list) return;
+  if (!currentUser.isAdmin) return;
+  if (onlineUsers.length === 0) {
+    list.innerHTML = '<div class="empty-panel">Tidak ada pengguna online.</div>';
+    return;
+  }
+  list.innerHTML = "";
+  onlineUsers.forEach(u => {
+    const el = document.createElement("div");
+    el.className = "online-list-item";
+    const badge = u.role === "admin" ? "role-admin" : "role-viewer";
+    el.innerHTML = `
+      <span>👤 ${u.name}</span>
+      <span class="badge-role ${badge}">${u.role.toUpperCase()}</span>
+    `;
+    list.appendChild(el);
+  });
+}
+
+// ============== SEARCH ==============
+window.doSearch = function() { render(); };
+
+function getSearchQuery() {
+  const el = document.getElementById("searchBox");
+  if (!el) return "";
+  return String(el.value || "").toLowerCase().trim();
+}
+
+// ============== RENDER ==============
+function render() {
+  const container = document.getElementById("sections");
+  container.innerHTML = "";
+  const q = getSearchQuery();
+
+  data.forEach(section => {
+    const secEl = document.createElement("div");
+    secEl.className = "section";
+
+    let secTotal = 0, secDone = 0;
+    section.groups.forEach(g => g.tasks.forEach(t => {
+      secTotal++;
+      if (t.status === "done") secDone++;
+    }));
+
+    if (q) {
+      let hasMatch = false;
+      section.groups.forEach(g => {
+        if (g.title.toLowerCase().includes(q)) hasMatch = true;
+        g.tasks.forEach(t => {
+          if (t.name.toLowerCase().includes(q) ||
+              (t.teknisi||"").toLowerCase().includes(q) ||
+              (t.note||"").toLowerCase().includes(q) ||
+              (t.keterangan||"").toLowerCase().includes(q)) hasMatch = true;
+        });
+      });
+      if (!hasMatch) return;
+    }
+
+    const isCollapsed = (collapsed[section.id] && !q) ? "collapsed" : "";
+    const header = document.createElement("div");
+    header.className = "section-header " + isCollapsed;
+    header.innerHTML = `<span>${section.title}<span class="progress-info">${secDone}/${secTotal}</span></span><span class="arrow">▼</span>`;
+    header.onclick = () => { collapsed[section.id] = !collapsed[section.id]; render(); };
+    secEl.appendChild(header);
+
+    if (!collapsed[section.id] || q) {
+      section.groups.forEach(group => {
+        const filteredTasks = q
+          ? group.tasks.filter(t =>
+              t.name.toLowerCase().includes(q) ||
+              (t.teknisi||"").toLowerCase().includes(q) ||
+              (t.note||"").toLowerCase().includes(q) ||
+              (t.keterangan||"").toLowerCase().includes(q))
+          : group.tasks;
+
+        const groupNameMatch = q && group.title.toLowerCase().includes(q);
+        if (q && filteredTasks.length === 0 && !groupNameMatch) return;
+
+        const groupEl = document.createElement("div");
+        let gTotal = group.tasks.length;
+        let gDone = group.tasks.filter(t => t.status === "done").length;
+        let gProgress = group.tasks.filter(t => t.status === "progress").length;
+
+        let progClass = "progress-empty";
+        if (gTotal > 0) {
+          if (gDone === gTotal) progClass = "progress-high";
+          else if (gDone + gProgress > 0) progClass = "progress-mid";
+          else progClass = "progress-low";
+        }
+        groupEl.className = "group " + progClass;
+
+        const gCollapsed = (collapsed[group.id] && !q) ? "collapsed" : "";
+        const gh = document.createElement("div");
+        gh.className = "group-header " + gCollapsed;
+
+        let progBadgeClass = "prog-empty";
+        if (gTotal > 0) {
+          if (gDone === gTotal) progBadgeClass = "prog-done";
+          else if (gDone > 0) progBadgeClass = "prog-progress";
+        }
+
+        let groupBtns = "";
+        if (currentUser.isAdmin) {
+          groupBtns = `<button class="group-edit-btn" onclick="event.stopPropagation(); openEditGroup('${section.id}','${group.id}')">✏️ Edit</button>`;
+        }
+
+        gh.innerHTML = `
+          <span class="group-title">📂 ${group.title} <span class="count">${gTotal} item</span></span>
+          <span class="group-progress ${progBadgeClass}">${gDone}/${gTotal}</span>
+          ${groupBtns}
+          <span class="arrow">▼</span>
+        `;
+        gh.onclick = () => { collapsed[group.id] = !collapsed[group.id]; render(); };
+        groupEl.appendChild(gh);
+
+        if (!collapsed[group.id] || q) {
+          const tasksToShow = (q && groupNameMatch && filteredTasks.length === 0)
+            ? group.tasks
+            : filteredTasks;
+
+          tasksToShow.forEach(task => {
+            groupEl.appendChild(createTaskEl(section, group, task));
+          });
+
+          if (currentUser.isAdmin && !q) {
+            const addEl = document.createElement("div");
+            addEl.className = "add-task";
+            addEl.innerHTML = `
+              <input type="text" placeholder="Tambah pekerjaan / alat..." id="input-${group.id}"
+                     onkeydown="if(event.key==='Enter'){addTask('${section.id}','${group.id}')}">
+              <button type="button" onclick="addTask('${section.id}','${group.id}')">+ Tambah</button>
+            `;
+            groupEl.appendChild(addEl);
+          } else if (group.tasks.length === 0) {
+            const empty = document.createElement("div");
+            empty.style.cssText = "padding:10px;font-size:0.78rem;opacity:0.5;text-align:center;";
+            empty.textContent = "(Belum ada pekerjaan)";
+            groupEl.appendChild(empty);
+          }
+        }
+        secEl.appendChild(groupEl);
+      });
+    }
+    container.appendChild(secEl);
+  });
+
+  updateStats();
+}
+
+function createTaskEl(section, group, task) {
+  const el = document.createElement("div");
+  el.className = "task";
+  const isAdmin = currentUser.isAdmin;
+
+  const row1 = document.createElement("div");
+  row1.className = "task-row1";
+  const name = document.createElement("div");
+  name.className = "task-name";
+  name.textContent = task.name;
+  row1.appendChild(name);
+
+  const status = document.createElement("span");
+  status.className = "task-status status-" + task.status + (isAdmin ? " clickable" : "");
+  status.textContent = STATUS_LABEL[task.status];
+  if (isAdmin) {
+    status.onclick = () => {
+      const idx = STATUS_ORDER.indexOf(task.status);
+      updateTask(task, { status: STATUS_ORDER[(idx + 1) % STATUS_ORDER.length] });
+    };
+  }
+  row1.appendChild(status);
+  el.appendChild(row1);
+
+  // KETERANGAN
+  if (task.keterangan && task.keterangan.trim()) {
+    const ket = document.createElement("div");
+    ket.className = "keterangan-box";
+    ket.innerHTML = `<div class="keterangan-label">📝 KETERANGAN / LAPORAN:</div>${escapeHtml(task.keterangan)}`;
+    el.appendChild(ket);
+  }
+
+  const row2 = document.createElement("div");
+  row2.className = "task-row2";
+  const teknisiInput = document.createElement("input");
+  teknisiInput.type = "text";
+  teknisiInput.placeholder = "👤 Teknisi";
+  teknisiInput.value = task.teknisi || "";
+  teknisiInput.disabled = !isAdmin;
+  teknisiInput.onchange = (e) => { if (isAdmin) updateTask(task, { teknisi: e.target.value }); };
+  row2.appendChild(teknisiInput);
+
+  const startInput = document.createElement("input");
+  startInput.type = "time";
+  startInput.value = task.start || "";
+  startInput.disabled = !isAdmin;
+  startInput.onchange = (e) => { if (isAdmin) updateTask(task, { start: e.target.value }); };
+  row2.appendChild(startInput);
+
+  const endInput = document.createElement("input");
+  endInput.type = "time";
+  endInput.value = task.end || "";
+  endInput.disabled = !isAdmin;
+  endInput.onchange = (e) => { if (isAdmin) updateTask(task, { end: e.target.value }); };
+  row2.appendChild(endInput);
+  el.appendChild(row2);
+
+  const row3 = document.createElement("div");
+  row3.className = "task-row3";
+  const note = document.createElement("input");
+  note.type = "text";
+  note.placeholder = "📝 Catatan singkat...";
+  note.value = task.note || "";
+  note.disabled = !isAdmin;
+  note.onchange = (e) => { if (isAdmin) updateTask(task, { note: e.target.value }); };
+  row3.appendChild(note);
+
+  if (isAdmin) {
+    const uploadBtn = document.createElement("button");
+    uploadBtn.className = "upload-btn";
+    uploadBtn.textContent = "📷";
+    uploadBtn.title = "Upload foto";
+    uploadBtn.onclick = () => {
+      currentPhotoTask = { taskId: task.id };
+      document.getElementById("hiddenFileInput").click();
+    };
+    row3.appendChild(uploadBtn);
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit-task-btn";
+    editBtn.textContent = "✏️ Edit";
+    editBtn.title = "Edit keterangan lengkap";
+    editBtn.onclick = () => openEditTask(section, group, task);
+    row3.appendChild(editBtn);
+
+    const archiveBtn = document.createElement("button");
+    archiveBtn.className = "archive-btn";
+    archiveBtn.textContent = "📦";
+    archiveBtn.title = "Arsipkan";
+    archiveBtn.onclick = () => {
+      if (confirm(`Arsipkan "${task.name}"?`)) archiveTask(group, task);
+    };
+    row3.appendChild(archiveBtn);
+  } else {
+    const reqBtn = document.createElement("button");
+    reqBtn.className = "upload-btn";
+    reqBtn.style.background = "#f59e0b";
+    reqBtn.textContent = "✏️ Ajukan";
+    reqBtn.onclick = () => requestEdit(section, group, task);
+    row3.appendChild(reqBtn);
+  }
+  el.appendChild(row3);
+
+  if (task.photos && task.photos.length > 0) {
+    const grid = document.createElement("div");
+    grid.className = "photo-grid";
+    task.photos.forEach((photo, idx) => {
+      const item = document.createElement("div");
+      item.className = "photo-item";
+      const img = document.createElement("img");
+      img.src = photo;
+      img.onclick = (e) => { e.stopPropagation(); openModal(photo); };
+      item.appendChild(img);
+      if (isAdmin) {
+        const delBtnP = document.createElement("button");
+        delBtnP.className = "del-photo";
+        delBtnP.textContent = "✕";
+        delBtnP.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm("Hapus foto ini?")) {
+            task.photos.splice(idx, 1);
+            saveData();
+          }
+        };
+        item.appendChild(delBtnP);
+      }
+      grid.appendChild(item);
+    });
+    el.appendChild(grid);
+  }
+  return el;
+}
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// ============== CRUD ==============
+function saveData() {
+  set(ref(db, "rmj2/data"), data)
+    .then(() => showToast("💾 Tersimpan"))
+    .catch(err => showToast("❌ " + err.message, "error"));
+}
+function updateTask(task, updates) {
+  Object.assign(task, updates);
+  saveData();
+}
+
+window.addTask = function(sectionId, groupId) {
+  const input = document.getElementById("input-" + groupId);
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) { showToast("⚠️ Isi dulu nama", "warn"); return; }
+  const section = data.find(s => s.id === sectionId);
+  const group = section ? section.groups.find(g => g.id === groupId) : null;
+  if (!group) return;
+  const count = group.tasks.length;
+  const letter = String.fromCharCode(97 + count);
+  group.tasks.push({ id: groupId + "_" + Date.now(), name: `${letter}. ${val}`, status: "pending", note: "", teknisi: "", start: "", end: "", photos: [], keterangan: "" });
+  input.value = "";
+  render();
+  saveData();
+};
+
+// ============== EDIT TASK ==============
+let currentEditTask = null;
+window.openEditTask = function(section, group, task) {
+  currentEditTask = { section, group, task };
+  document.getElementById("editTaskTitle").textContent = "✏️ Edit: " + task.name;
+  document.getElementById("editTaskContent").innerHTML = `
+    <div class="form-field">
+      <label>Nama Pekerjaan / Alat</label>
+      <input type="text" id="edtName" value="${escapeHtml(task.name)}">
+    </div>
+    <div class="form-field">
+      <label>Keterangan / Laporan (bisa banyak baris)</label>
+      <textarea id="edtKeterangan" placeholder="Tulis tahap pekerjaan, kondisi alat, dll...">${escapeHtml(task.keterangan || "")}</textarea>
+    </div>
+    <div class="form-field">
+      <label>Teknisi</label>
+      <input type="text" id="edtTeknisi" value="${escapeHtml(task.teknisi || "")}">
+    </div>
+    <div class="form-field">
+      <label>Catatan Singkat</label>
+      <input type="text" id="edtNote" value="${escapeHtml(task.note || "")}">
+    </div>
+    <button class="btn btn-success" onclick="saveEditTask()" style="width:100%; padding:11px; margin-top:8px;">💾 Simpan Perubahan</button>
+  `;
+  document.getElementById("editTaskPanel").classList.add("show");
+};
+
+window.closeEditTask = function() {
+  document.getElementById("editTaskPanel").classList.remove("show");
+  currentEditTask = null;
+};
+
+window.saveEditTask = function() {
+  if (!currentEditTask) return;
+  const { task } = currentEditTask;
+  task.name = document.getElementById("edtName").value.trim() || task.name;
+  task.keterangan = document.getElementById("edtKeterangan").value;
+  task.teknisi = document.getElementById("edtTeknisi").value.trim();
+  task.note = document.getElementById("edtNote").value.trim();
+  saveData();
+  render();
+  closeEditTask();
+  showToast("✅ Tersimpan");
+};
+
+// ============== EDIT GROUP ==============
+let currentEditGroup = null;
+window.openEditGroup = function(sectionId, groupId) {
+  const section = data.find(s => s.id === sectionId);
+  const group = section ? section.groups.find(g => g.id === groupId) : null;
+  if (!group) return;
+  currentEditGroup = { sectionId, groupId };
+  document.getElementById("editGroupTitle").textContent = "✏️ Edit Alat: " + group.title;
+  document.getElementById("editGroupContent").innerHTML = `
+    <div class="form-field">
+      <label>Nama Alat / Group</label>
+      <input type="text" id="edtGroupName" value="${escapeHtml(group.title)}">
+    </div>
+    <p style="font-size:0.75rem; opacity:0.7; margin-bottom:10px;">
+      Untuk mengubah nama unit (misal: "Genset 1" jadi "Genset Utama"), klik tombol Edit di masing-masing item.
+    </p>
+    <button class="btn btn-success" onclick="saveEditGroup()" style="width:100%; padding:11px;">💾 Simpan</button>
+  `;
+  document.getElementById("editGroupPanel").classList.add("show");
+};
+
+window.closeEditGroup = function() {
+  document.getElementById("editGroupPanel").classList.remove("show");
+  currentEditGroup = null;
+};
+
+window.saveEditGroup = function() {
+  if (!currentEditGroup) return;
+  const newName = document.getElementById("edtGroupName").value.trim();
+  if (!newName) return;
+  const section = data.find(s => s.id === currentEditGroup.sectionId);
+  const group = section ? section.groups.find(g => g.id === currentEditGroup.groupId) : null;
+  if (!group) return;
+  group.title = newName;
+  saveData();
+  render();
+  closeEditGroup();
+  showToast("✅ Nama diubah");
+};
+
+// ============== VIEWER REQUEST ==============
+function requestEdit(section, group, task) {
+  const req = prompt(`Ajukan perubahan:\n\n${task.name}\n(${group.title})\n\nStatus: ${STATUS_LABEL[task.status]}\nTeknisi: ${task.teknisi || "-"}\n\nTulis permintaan:`);
+  if (!req || !req.trim()) return;
+  push(ref(db, "rmj2/pending"), {
+    id: "req_" + Date.now(),
+    requester: currentUser.name,
+    sectionTitle: section.title,
+    groupTitle: group.title,
+    taskId: task.id,
+    taskName: task.name,
+    message: req.trim(),
+    createdAt: new Date().toISOString()
+  }).then(() => showToast("📤 Terkirim"));
+}
+
+// ============== PENDING ==============
+window.openPending = function() { document.getElementById("pendingPanel").classList.add("show"); renderPending(); };
+window.closePending = function() { document.getElementById("pendingPanel").classList.remove("show"); };
+
+function updatePendingBadge() {
+  const b = document.getElementById("pendingBadge");
+  if (pending.length > 0) { b.textContent = pending.length; b.style.display = "inline"; }
+  else b.style.display = "none";
+}
+
+function renderPending() {
+  const list = document.getElementById("pendingList");
+  if (!list) return;
+  if (pending.length === 0) { list.innerHTML = '<div class="empty-panel">📭 Belum ada permintaan.</div>'; return; }
+  list.innerHTML = "";
+  pending.forEach(req => {
+    const el = document.createElement("div");
+    el.className = "panel-item";
+    el.style.borderLeftColor = "#f59e0b";
+    const tgl = new Date(req.createdAt).toLocaleString("id-ID");
+    el.innerHTML = `
+      <div class="title">📌 ${req.taskName}</div>
+      <div class="meta">👤 ${req.requester}</div>
+      <div class="meta">📁 ${req.sectionTitle} → ${req.groupTitle}</div>
+      <div class="meta">📅 ${tgl}</div>
+      <div class="meta" style="margin-top:6px; padding:6px; background:#334155; border-radius:6px;">💬 <em>"${escapeHtml(req.message)}"</em></div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const approveBtn = document.createElement("button");
+    approveBtn.className = "btn-approve";
+    approveBtn.textContent = "✅ Terapkan";
+    approveBtn.onclick = () => openApproveDialog(req);
+    actions.appendChild(approveBtn);
+    const rejectBtn = document.createElement("button");
+    rejectBtn.className = "btn-reject";
+    rejectBtn.textContent = "❌ Tolak";
+    rejectBtn.onclick = () => {
+      if (confirm("Tolak?")) remove(ref(db, "rmj2/pending/" + req.id)).then(() => showToast("❌ Ditolak"));
+    };
+    actions.appendChild(rejectBtn);
+    el.appendChild(actions);
+    list.appendChild(el);
+  });
+}
+
+// ============== APPROVE ==============
+let currentApproveReq = null;
+window.openApproveDialog = function(req) {
+  currentApproveReq = req;
+  document.getElementById("approveTitle").textContent = "✅ " + req.taskName;
+  document.getElementById("approveDetail").innerHTML = `
+    <div style="background:#0f172a; padding:12px; border-radius:8px; margin-bottom:12px;">
+      <p style="margin-bottom:6px;"><strong>Dari:</strong> ${req.requester}</p>
+      <p><strong>Pesan:</strong> <em>"${escapeHtml(req.message)}"</em></p>
+    </div>
+    <label style="display:block; margin-bottom:4px; font-size:0.82rem;">Status:</label>
+    <select id="approveStatus" style="width:100%; padding:9px; border-radius:6px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; margin-bottom:10px;">
+      <option value="">-- Tidak diubah --</option>
+      <option value="pending">Pending</option>
+      <option value="progress">Proses</option>
+      <option value="done">Selesai</option>
+      <option value="skip">Skip</option>
+    </select>
+    <label style="display:block; margin-bottom:4px; font-size:0.82rem;">Teknisi:</label>
+    <input type="text" id="approveTeknisi" placeholder="Kosong = tidak diubah" style="width:100%; padding:9px; border-radius:6px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; margin-bottom:10px;">
+    <label style="display:block; margin-bottom:4px; font-size:0.82rem;">Catatan:</label>
+    <input type="text" id="approveNote" placeholder="Kosong = tidak diubah" style="width:100%; padding:9px; border-radius:6px; background:#0f172a; color:#e2e8f0; border:1px solid #334155; margin-bottom:14px;">
+    <button class="btn btn-success" onclick="applyApprove()" style="width:100%; padding:11px;">✅ Terapkan</button>
+  `;
+  document.getElementById("approvePanel").classList.add("show");
+};
+window.closeApprove = function() { document.getElementById("approvePanel").classList.remove("show"); currentApproveReq = null; };
+
+window.applyApprove = function() {
+  const req = currentApproveReq;
+  if (!req) return;
+  const newStatus = document.getElementById("approveStatus").value;
+  const newTeknisi = document.getElementById("approveTeknisi").value.trim();
+  const newNote = document.getElementById("approveNote").value.trim();
+  let found = null;
+  data.forEach(s => s.groups.forEach(g => g.tasks.forEach(t => { if (t.id === req.taskId) found = t; })));
+  if (!found) { showToast("❌ Tidak ditemukan", "error"); return; }
+  if (newStatus) found.status = newStatus;
+  if (newTeknisi) found.teknisi = newTeknisi;
+  if (newNote) found.note = newNote;
+  saveData();
+  remove(ref(db, "rmj2/pending/" + req.id)).then(() => { showToast("✅ Diterapkan"); closeApprove(); });
+};
+
+// ============== ARSIP ==============
+function archiveTask(group, task) {
+  const entry = {
+    id: "arc_" + Date.now(),
+    name: task.name, groupTitle: group.title,
+    status: task.status, note: task.note, teknisi: task.teknisi,
+    start: task.start, end: task.end,
+    keterangan: task.keterangan || "",
+    photos: task.photos ? [...task.photos] : [],
+    archivedAt: new Date().toISOString()
+  };
+  set(ref(db, "rmj2/archive"), [entry, ...archive]);
+  group.tasks = group.tasks.filter(t => t.id !== task.id);
+  saveData();
+  showToast("📦 Diarsipkan");
+}
+
+window.openArchive = function() { document.getElementById("archivePanel").classList.add("show"); renderArchive(); };
+window.closeArchive = function() { document.getElementById("archivePanel").classList.remove("show"); };
+
+function renderArchive() {
+  const list = document.getElementById("archiveList");
+  if (!list) return;
+  if (archive.length === 0) { list.innerHTML = '<div class="empty-panel">📭 Belum ada arsip.</div>'; return; }
+  list.innerHTML = "";
+  archive.forEach(item => {
+    const el = document.createElement("div");
+    el.className = "panel-item";
+    const date = new Date(item.archivedAt).toLocaleString("id-ID");
+    let html = `<div class="title">${escapeHtml(item.name)}</div><div class="meta">📁 ${escapeHtml(item.groupTitle)}</div><div class="meta">📅 ${date}</div>`;
+    if (item.teknisi) html += `<div class="meta">👤 ${escapeHtml(item.teknisi)}</div>`;
+    if (item.note) html += `<div class="meta">📝 ${escapeHtml(item.note)}</div>`;
+    if (item.keterangan) html += `<div class="keterangan-box"><div class="keterangan-label">KETERANGAN:</div>${escapeHtml(item.keterangan)}</div>`;
+    el.innerHTML = html;
+    if (item.photos && item.photos.length > 0) {
+      const photosDiv = document.createElement("div");
+      photosDiv.className = "photos";
+      item.photos.forEach(p => {
+        const img = document.createElement("img");
+        img.src = p;
+        img.onclick = (e) => { e.stopPropagation(); openModal(p); };
+        photosDiv.appendChild(img);
+      });
+      el.appendChild(photosDiv);
+    }
+    if (currentUser.isAdmin) {
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn-reject";
+      delBtn.textContent = "🗑 Hapus";
+      delBtn.onclick = () => {
+        if (confirm("Hapus permanen?")) {
+          set(ref(db, "rmj2/archive"), archive.filter(a => a.id !== item.id));
+        }
+      };
+      actions.appendChild(delBtn);
+      el.appendChild(actions);
+    }
+    list.appendChild(el);
+  });
+}
+
+window.clearArchive = function() {
+  if (archive.length === 0) return alert("Arsip kosong.");
+  if (confirm("Kosongkan SEMUA arsip?")) {
+    set(ref(db, "rmj2/archive"), null);
+    showToast("🗑 Dikosongkan");
+  }
+};
+
+// ============== RESET HARIAN ==============
+window.resetHarian = function() {
+  if (!currentUser.isAdmin) return;
+  if (!confirm("Reset Harian?\nSemua status jadi Pending.\nCatatan, teknisi, jam, foto dihapus.\nKeterangan tetap.")) return;
+  data.forEach(s => s.groups.forEach(g => g.tasks.forEach(t => {
+    t.status = "pending"; t.note = ""; t.teknisi = ""; t.start = ""; t.end = ""; t.photos = [];
+  })));
+  saveData();
+  showToast("🔄 Reset selesai");
+};
+
+// ============== FOTO ==============
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (!file || !currentPhotoTask) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > h && w > MAX) { h = h * MAX / w; w = MAX; }
+      else if (h > MAX) { w = w * MAX / h; h = MAX; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL("image/jpeg", 0.6);
+      let found = null;
+      data.forEach(s => s.groups.forEach(g => g.tasks.forEach(t => { if (t.id === currentPhotoTask.taskId) found = t; })));
+      if (found) {
+        if (!found.photos) found.photos = [];
+        found.photos.push(compressed);
+        currentPhotoTask = null;
+        e.target.value = "";
+        saveData();
+        showToast("📷 Foto ditambahkan");
+      }
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+window.openModal = function(src) {
+  document.getElementById("modalImg").src = src;
+  document.getElementById("imgModal").classList.add("show");
+  document.body.style.overflow = "hidden";
+};
+window.closeModal = function() {
+  document.getElementById("imgModal").classList.remove("show");
+  document.body.style.overflow = "";
+};
+
+// ============== EXPORT / IMPORT ==============
+window.exportData = function() {
+  const date = document.getElementById("datePicker").value || "hari-ini";
+  const obj = { data: data, archive: archive, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `repair-maintenance-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("📁 File di-export");
+};
+
+window.importData = function() {
+  if (!currentUser.isAdmin) return;
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const imported = JSON.parse(ev.target.result);
+        if (imported.data && Array.isArray(imported.data)) {
+          data = imported.data;
+          if (imported.archive) set(ref(db, "rmj2/archive"), imported.archive);
+          saveData();
+          showToast("✅ Berhasil import");
+        } else throw new Error();
+      } catch { alert("File tidak valid!"); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+};
+
+// ============== TOAST ==============
+let toastTimer;
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = "toast " + type, 2000);
+}
+
+// ============== STATS ==============
+function updateStats() {
+  let total = 0, done = 0, progress = 0, pendingC = 0, skipC = 0;
+  data.forEach(s => s.groups.forEach(g => g.tasks.forEach(t => {
+    total++;
+    if (t.status === "done") done++;
+    else if (t.status === "progress") progress++;
+    else if (t.status === "pending") pendingC++;
+    else if (t.status === "skip") skipC++;
+  })));
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statDone").textContent = done;
+  document.getElementById("statProgress").textContent = progress;
+  document.getElementById("statPending").textContent = pendingC;
+  document.getElementById("statSkip").textContent = skipC;
+}
+
+// ============== AUTO LOGIN ==============
+window.addEventListener("load", () => {
+  const saved = localStorage.getItem("rmj_user");
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      if (currentUser.name) enterApp();
+    } catch(e) { localStorage.removeItem("rmj_user"); }
+  }
+});
+window.addEventListener("beforeunload", () => {
+  if (mySessionId) {
+    remove(ref(db, "rmj2/online/" + mySessionId));
+  }
+});
+</script>
+</body>
+</html>
